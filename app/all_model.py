@@ -1,54 +1,15 @@
-from pydantic import BaseModel, Field
-from datetime import datetime, date
-from typing import List, Optional
-from bson import ObjectId
-# custom type with __get_pydantic_core_schema__
+# custom ObjectId type with __get_pydantic_core_schema__
 from pyobjectid import PyObjectId
-
-# ---------------------------
-# Users
-# ---------------------------
-# ** USED ONLY FOR Account CREATION
-
-
-class UserForm(BaseModel):
-    email: Optional[str] = None
-    username: str
-    name: Optional[str] = None
-    hashed_password: str
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {
-            date: str
-        }  # type: ignore
+from bson import ObjectId
+from typing import List, Optional
+from datetime import datetime, date
+from pydantic import BaseModel, Field
 
 
-"""
-User Authentication only needed for token auth in services/auth.py
-"""
-
-
-class UserAuth(BaseModel):
-    id: PyObjectId = Field(..., alias="_id")
-    email: Optional[str] = Field(default=None)
-    username: Optional[str] = Field(default=None)
-    disabled: Optional[bool] = Field(default=False)
-    is_admin: Optional[bool] = False
-
-    class Config:
-        arbitrary_types_allowed = True
-        from_attributes = True
-        json_encoders = {
-            ObjectId: str
-        }
-
-
-class UserAuthPass(UserAuth):
-    hashed_password: str
-
-    class Config:
-        extra = 'allow'
+# NOTE:
+# • “Create” models omit fields that are auto-generated on insertion (like created_at).
+# • “DB” models require those fields. In your CRUD layer, after insertion,
+#   ensure you inject required fields (or use model_dump(by_alias=True)) when re-creating a DB model.
 
 
 # ---------------------------
@@ -62,6 +23,11 @@ class UserProfileCreate(BaseModel):
     badges: List[str] = []
     personality_type: Optional[str] = None
 
+    class Config:
+        arbitrary_types_allowed = True
+        # When dumping, use aliases if needed: model_dump(by_alias=True)
+        json_encoders = {ObjectId: str}
+
 
 class UserProfileDB(UserProfileCreate):
     id: PyObjectId = Field(..., alias="_id")
@@ -70,9 +36,7 @@ class UserProfileDB(UserProfileCreate):
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
-        json_encoders = {
-            ObjectId: str
-        }
+        json_encoders = {ObjectId: str}
 
 
 # ---------------------------
@@ -83,7 +47,11 @@ class EventCreate(BaseModel):
     description: Optional[str] = None
     date: Optional[datetime] = None
     location: Optional[str] = None
-    tags: List[str] = []
+    tags: List[str] = []  # e.g. ["hackathon", "networking"]
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
 
 
 class EventDB(EventCreate):
@@ -93,9 +61,7 @@ class EventDB(EventCreate):
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
-        json_encoders = {
-            ObjectId: str
-        }
+        json_encoders = {ObjectId: str}
 
 
 # ---------------------------
@@ -108,6 +74,10 @@ class ClubCreate(BaseModel):
     tags: List[str] = []
     contact_email: Optional[str] = None
 
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
 
 class ClubDB(ClubCreate):
     id: PyObjectId = Field(..., alias="_id")
@@ -116,9 +86,7 @@ class ClubDB(ClubCreate):
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
-        json_encoders = {
-            ObjectId: str
-        }
+        json_encoders = {ObjectId: str}
 
 
 # ---------------------------
@@ -131,6 +99,10 @@ class AttendanceCreate(BaseModel):
     # Optional inline feedback data (e.g., rating, comments)
     feedback: Optional[dict] = None
 
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
 
 class AttendanceDB(AttendanceCreate):
     id: PyObjectId = Field(..., alias="_id")
@@ -138,9 +110,7 @@ class AttendanceDB(AttendanceCreate):
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
-        json_encoders = {
-            ObjectId: str
-        }
+        json_encoders = {ObjectId: str}
 
 
 # ---------------------------
@@ -151,6 +121,10 @@ class MembershipCreate(BaseModel):
     club_id: PyObjectId
     joined_at: Optional[datetime] = None
 
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
 
 class MembershipDB(MembershipCreate):
     id: PyObjectId = Field(..., alias="_id")
@@ -158,9 +132,7 @@ class MembershipDB(MembershipCreate):
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
-        json_encoders = {
-            ObjectId: str
-        }
+        json_encoders = {ObjectId: str}
 
 
 # ---------------------------
@@ -174,6 +146,10 @@ class FeedbackCreate(BaseModel):
     comment: Optional[str] = None
     created_at: datetime = Field(...)
 
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
 
 class FeedbackDB(FeedbackCreate):
     id: PyObjectId = Field(..., alias="_id")
@@ -181,9 +157,7 @@ class FeedbackDB(FeedbackCreate):
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
-        json_encoders = {
-            ObjectId: str
-        }
+        json_encoders = {ObjectId: str}
 
 
 # ---------------------------
@@ -196,6 +170,10 @@ class ResourceCreate(BaseModel):
     contact_info: Optional[str] = None
     tags: List[str] = []
 
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
 
 class ResourceDB(ResourceCreate):
     id: PyObjectId = Field(..., alias="_id")
@@ -203,6 +181,4 @@ class ResourceDB(ResourceCreate):
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
-        json_encoders = {
-            ObjectId: str
-        }
+        json_encoders = {ObjectId: str}

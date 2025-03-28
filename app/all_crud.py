@@ -1,5 +1,4 @@
 from mongodb import database
-from user_model import UserAuth, UserAuthPass, UserForm
 from all_model import (
     UserProfileCreate, UserProfileDB,
     EventCreate, EventDB,
@@ -9,8 +8,7 @@ from all_model import (
     FeedbackCreate, FeedbackDB,
     ResourceCreate, ResourceDB
 )
-
-# from user_model import UserAuth, UserAuthPass, UserForm
+from user_model import UserForm, UserAuth, UserAuthPass
 from bson.objectid import ObjectId
 from datetime import datetime
 from typing import List, Optional
@@ -43,8 +41,9 @@ async def get_user_by_email(email: str) -> UserAuthPass:
 
 
 async def create_user(user_data: UserForm):
-    user = user_data.model_dump()
-    result = await user_collection.insert_one(user)
+    # Use by_alias=True to ensure keys match Mongo's schema (i.e. "_id")
+    user_dict = user_data.model_dump(by_alias=True)
+    result = await user_collection.insert_one(user_dict)
     new_user = await user_collection.find_one({"_id": result.inserted_id})
     return new_user
 
@@ -61,18 +60,17 @@ async def get_profile_by_user_id(user_id: str) -> UserProfileDB:
     return UserProfileDB(**result)
 
 
-async def create_profile(profile_data: UserProfileCreate) -> UserProfileDB:
-    data = profile_data.model_dump()
-    result = await profile_collection.insert_one(data)
+async def create_profile(profile_data: dict) -> UserProfileDB:
+    # profile_data should include the required "profile_created_at" field.
+    result = await profile_collection.insert_one(profile_data)
     new_profile = await profile_collection.find_one({"_id": result.inserted_id})
     return UserProfileDB(**new_profile)
 
 
-async def update_profile(user_id: str, profile_data: UserProfileCreate) -> UserProfileDB:
-    data = profile_data.model_dump()
+async def update_profile(user_id: str, profile_data: dict) -> UserProfileDB:
     result = await profile_collection.update_one(
         {"user_id": ObjectId(user_id)},
-        {"$set": data}
+        {"$set": profile_data}
     )
     if result.modified_count == 0:
         return False
@@ -85,9 +83,8 @@ async def update_profile(user_id: str, profile_data: UserProfileCreate) -> UserP
 event_collection = database.events
 
 
-async def create_event(event_data: EventCreate) -> EventDB:
-    data = event_data.model_dump()
-    result = await event_collection.insert_one(data)
+async def create_event(event_data: dict) -> EventDB:
+    result = await event_collection.insert_one(event_data)
     new_event = await event_collection.find_one({"_id": result.inserted_id})
     return EventDB(**new_event)
 
@@ -105,11 +102,10 @@ async def get_event_by_id(event_id: str) -> EventDB:
     return EventDB(**result)
 
 
-async def update_event(event_id: str, event_data: EventCreate) -> EventDB:
-    data = event_data.model_dump()
+async def update_event(event_id: str, event_data: dict) -> EventDB:
     result = await event_collection.update_one(
         {"_id": ObjectId(event_id)},
-        {"$set": data}
+        {"$set": event_data}
     )
     if result.modified_count == 0:
         return False
@@ -127,9 +123,8 @@ async def delete_event(event_id: str) -> bool:
 club_collection = database.clubs
 
 
-async def create_club(club_data: ClubCreate) -> ClubDB:
-    data = club_data.model_dump()
-    result = await club_collection.insert_one(data)
+async def create_club(club_data: dict) -> ClubDB:
+    result = await club_collection.insert_one(club_data)
     new_club = await club_collection.find_one({"_id": result.inserted_id})
     return ClubDB(**new_club)
 
@@ -147,11 +142,10 @@ async def get_club_by_id(club_id: str) -> ClubDB:
     return ClubDB(**result)
 
 
-async def update_club(club_id: str, club_data: ClubCreate) -> ClubDB:
-    data = club_data.model_dump()
+async def update_club(club_id: str, club_data: dict) -> ClubDB:
     result = await club_collection.update_one(
         {"_id": ObjectId(club_id)},
-        {"$set": data}
+        {"$set": club_data}
     )
     if result.modified_count == 0:
         return False
@@ -169,11 +163,8 @@ async def delete_club(club_id: str) -> bool:
 attendance_collection = database.attendances
 
 
-async def create_attendance(att_data: AttendanceCreate) -> AttendanceDB:
-    data = att_data.model_dump()
-    if not data.get("scanned_at"):
-        data["scanned_at"] = datetime.utcnow()
-    result = await attendance_collection.insert_one(data)
+async def create_attendance(att_data: dict) -> AttendanceDB:
+    result = await attendance_collection.insert_one(att_data)
     new_att = await attendance_collection.find_one({"_id": result.inserted_id})
     return AttendanceDB(**new_att)
 
@@ -194,11 +185,8 @@ async def find_attendances(user_id: Optional[str] = None, event_id: Optional[str
 membership_collection = database.memberships
 
 
-async def create_membership(memb_data: MembershipCreate) -> MembershipDB:
-    data = memb_data.model_dump()
-    if not data.get("joined_at"):
-        data["joined_at"] = datetime.utcnow()
-    result = await membership_collection.insert_one(data)
+async def create_membership(memb_data: dict) -> MembershipDB:
+    result = await membership_collection.insert_one(memb_data)
     new_memb = await membership_collection.find_one({"_id": result.inserted_id})
     return MembershipDB(**new_memb)
 
@@ -219,9 +207,8 @@ async def find_memberships(user_id: Optional[str] = None, club_id: Optional[str]
 feedback_collection = database.feedback
 
 
-async def create_feedback(fb_data: FeedbackCreate) -> FeedbackDB:
-    data = fb_data.model_dump()
-    result = await feedback_collection.insert_one(data)
+async def create_feedback(fb_data: dict) -> FeedbackDB:
+    result = await feedback_collection.insert_one(fb_data)
     new_fb = await feedback_collection.find_one({"_id": result.inserted_id})
     return FeedbackDB(**new_fb)
 
@@ -242,9 +229,8 @@ async def find_feedback(target_type: Optional[str] = None, target_id: Optional[s
 resource_collection = database.resources
 
 
-async def create_resource(res_data: ResourceCreate) -> ResourceDB:
-    data = res_data.model_dump()
-    result = await resource_collection.insert_one(data)
+async def create_resource(res_data: dict) -> ResourceDB:
+    result = await resource_collection.insert_one(res_data)
     new_res = await resource_collection.find_one({"_id": result.inserted_id})
     return ResourceDB(**new_res)
 
@@ -262,11 +248,10 @@ async def get_resource_by_id(res_id: str) -> ResourceDB:
     return ResourceDB(**result)
 
 
-async def update_resource(res_id: str, res_data: ResourceCreate) -> ResourceDB:
-    data = res_data.model_dump()
+async def update_resource(res_id: str, res_data: dict) -> ResourceDB:
     result = await resource_collection.update_one(
         {"_id": ObjectId(res_id)},
-        {"$set": data}
+        {"$set": res_data}
     )
     if result.modified_count == 0:
         return False
