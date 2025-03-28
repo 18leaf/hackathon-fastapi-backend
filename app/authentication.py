@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from crud.user_crud import get_user_by_username, get_user
+from all_crud import get_user_by_username, get_user
 from datetime import datetime, timedelta
-from core.config import settings
-from models.user_model import UserAuth, UserAuthPass
+from config import settings
+from user_model import UserAuth, UserAuthPass
 
 from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm

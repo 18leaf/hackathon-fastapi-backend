@@ -4,7 +4,6 @@ from typing import List, Optional
 from bson import ObjectId
 
 
-
 # ** USED ONLY FOR Account CREATION
 class UserForm(BaseModel):
     email: str | None = None
@@ -16,7 +15,7 @@ class UserForm(BaseModel):
         arbitrary_types_allowed = True
         json_encoders: {
             date: str
-        }
+        }  # type: ignore
 
 
 """

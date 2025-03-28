@@ -1,5 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from core.config import settings
+from config import settings
 
 client = AsyncIOMotorClient(settings.MONGO_URI)
-database = client.CookinAppDev
+# change clinet.(name) for
+database = client.HACKATHONDB
