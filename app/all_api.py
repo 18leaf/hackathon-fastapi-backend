@@ -24,13 +24,13 @@ router = APIRouter()
 @router.post("/user/create_user")
 async def create_user_endpoint(user: UserForm):
     # Validate uniqueness
-    if user.email:
+    '''if user.email:
         email_user = await all_crud.get_user_by_email(user.email)
         if email_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Email Already Used"
-            )
+            )'''
     username_user = await all_crud.get_user_by_username(user.username)
     if username_user:
         raise HTTPException(
