@@ -2,11 +2,7 @@ from mongodb import database
 from all_model import (
     UserProfileCreate, UserProfileDB,
     EventCreate, EventDB,
-    ClubCreate, ClubDB,
     AttendanceCreate, AttendanceDB,
-    MembershipCreate, MembershipDB,
-    FeedbackCreate, FeedbackDB,
-    ResourceCreate, ResourceDB
 )
 from user_model import UserForm, UserAuth, UserAuthPass
 from bson.objectid import ObjectId
@@ -145,26 +141,26 @@ async def find_attendances(user_id: Optional[str] = None, event_id: Optional[str
 async def get_event_personas(event_id: str) -> List[Dict[str, Any]]:
     """
     Retrieves descriptive user profiles for all users who attended the given event.
-    It uses the attendances table to fetch user IDs linked to the event, then
-    queries user_profiles for each user, returning only descriptive attributes.
+    It uses the attendances table to fetch user IDs linked to the event, then queries 
+    user_profiles for each user, returning only the descriptive attributes:
+        - major
+        - year
+        - interests
+        - personality_type
 
     :param event_id: The event's ID as a string.
-    :return: A list of dictionaries containing:
-             - major
-             - year
-             - interests
-             - personality_type
+    :return: A list of dictionaries with the descriptive data.
     """
     # Retrieve attendance records for the specified event.
     attendances = await find_attendances(event_id=event_id)
-    # Extract unique user IDs from these attendance records.
-    user_ids = {str(att["user_id"]) for att in attendances}
+    # Extract unique user IDs using attribute access.
+    user_ids = {str(att.user_id) for att in attendances}
 
     personas: List[Dict[str, Any]] = []
     for uid in user_ids:
         profile = await get_profile_by_user_id(uid)
         if profile:
-            # Create a persona dictionary with only the descriptive fields.
+            # Construct a persona dictionary using only descriptive fields.
             persona = {
                 "major": profile.major,
                 "year": profile.year,
