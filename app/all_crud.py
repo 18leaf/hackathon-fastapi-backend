@@ -1,6 +1,6 @@
 from typing import List
 from ai_model import AISummaryCreate, AISummaryDB
-from mongodb import database
+from mongodb import database, faked_database
 from all_model import (
     UserProfileCreate, UserProfileDB,
     EventCreate, EventDB,
@@ -175,7 +175,7 @@ async def get_event_personas(event_id: str) -> List[Dict[str, Any]]:
 
 
 # Create a new collection for AI summaries.
-ai_summary_collection = database.ai_summaries
+ai_summary_collection = faked_database.ai_summaries
 
 
 async def create_ai_summary(summary_data: dict) -> AISummaryDB:
