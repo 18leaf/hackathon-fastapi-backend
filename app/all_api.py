@@ -187,33 +187,3 @@ async def list_attendance(
 ):
     attendances = await all_crud.find_attendances(user_id, event_id)
     return attendances
-
-
-# ---------------------------
-# Feedback Endpoints
-# ---------------------------
-
-
-@router.post("/feedback", response_model=FeedbackDB)
-async def create_feedback_endpoint(
-    feedback: FeedbackCreate,
-    current_user: Annotated[UserAuth, Depends(get_current_active_user)]
-):
-    fb_dict = feedback.model_dump()
-    fb_dict["user_id"] = current_user.id
-    if not fb_dict.get("created_at"):
-        fb_dict["created_at"] = datetime.utcnow()
-    new_fb = await all_crud.create_feedback(fb_dict)
-    if not new_fb:
-        raise HTTPException(
-            status_code=400, detail="Could not create feedback")
-    return new_fb
-
-
-@router.get("/feedback", response_model=List[FeedbackDB])
-async def list_feedback(
-    target_type: Optional[str] = Query(None),
-    target_id: Optional[str] = Query(None)
-):
-    feedbacks = await all_crud.find_feedback(target_type, target_id)
-    return feedbacks

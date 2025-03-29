@@ -11,7 +11,7 @@ from all_model import (
 from user_model import UserForm, UserAuth, UserAuthPass
 from bson.objectid import ObjectId
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 # ---------------------------
 # Users CRUD
@@ -118,46 +118,6 @@ async def delete_event(event_id: str) -> bool:
     return result.deleted_count == 1
 
 # ---------------------------
-# Clubs CRUD
-# ---------------------------
-club_collection = database.clubs
-
-
-async def create_club(club_data: dict) -> ClubDB:
-    result = await club_collection.insert_one(club_data)
-    new_club = await club_collection.find_one({"_id": result.inserted_id})
-    return ClubDB(**new_club)
-
-
-async def get_all_clubs() -> List[ClubDB]:
-    cursor = club_collection.find({})
-    clubs = await cursor.to_list(length=1000)
-    return [ClubDB(**club) for club in clubs]
-
-
-async def get_club_by_id(club_id: str) -> ClubDB:
-    result = await club_collection.find_one({"_id": ObjectId(club_id)})
-    if not result:
-        return False
-    return ClubDB(**result)
-
-
-async def update_club(club_id: str, club_data: dict) -> ClubDB:
-    result = await club_collection.update_one(
-        {"_id": ObjectId(club_id)},
-        {"$set": club_data}
-    )
-    if result.modified_count == 0:
-        return False
-    updated = await club_collection.find_one({"_id": ObjectId(club_id)})
-    return ClubDB(**updated)
-
-
-async def delete_club(club_id: str) -> bool:
-    result = await club_collection.delete_one({"_id": ObjectId(club_id)})
-    return result.deleted_count == 1
-
-# ---------------------------
 # Attendances CRUD
 # ---------------------------
 attendance_collection = database.attendances
@@ -179,86 +139,38 @@ async def find_attendances(user_id: Optional[str] = None, event_id: Optional[str
     attendances = await cursor.to_list(length=1000)
     return [AttendanceDB(**att) for att in attendances]
 
-# ---------------------------
-# Memberships CRUD
-# ---------------------------
-membership_collection = database.memberships
+# AI RESOURCE
 
 
-async def create_membership(memb_data: dict) -> MembershipDB:
-    result = await membership_collection.insert_one(memb_data)
-    new_memb = await membership_collection.find_one({"_id": result.inserted_id})
-    return MembershipDB(**new_memb)
+async def get_event_personas(event_id: str) -> List[Dict[str, Any]]:
+    """
+    Retrieves descriptive user profiles for all users who attended the given event.
+    It uses the attendances table to fetch user IDs linked to the event, then
+    queries user_profiles for each user, returning only descriptive attributes.
 
+    :param event_id: The event's ID as a string.
+    :return: A list of dictionaries containing:
+             - major
+             - year
+             - interests
+             - personality_type
+    """
+    # Retrieve attendance records for the specified event.
+    attendances = await find_attendances(event_id=event_id)
+    # Extract unique user IDs from these attendance records.
+    user_ids = {str(att["user_id"]) for att in attendances}
 
-async def find_memberships(user_id: Optional[str] = None, club_id: Optional[str] = None) -> List[MembershipDB]:
-    query = {}
-    if user_id:
-        query["user_id"] = ObjectId(user_id)
-    if club_id:
-        query["club_id"] = ObjectId(club_id)
-    cursor = membership_collection.find(query)
-    memberships = await cursor.to_list(length=1000)
-    return [MembershipDB(**memb) for memb in memberships]
+    personas: List[Dict[str, Any]] = []
+    for uid in user_ids:
+        profile = await get_profile_by_user_id(uid)
+        if profile:
+            # Create a persona dictionary with only the descriptive fields.
+            persona = {
+                "major": profile.major,
+                "year": profile.year,
+                "interests": profile.interests,
+                "personality_type": profile.personality_type,
+            }
+            personas.append(persona)
 
-# ---------------------------
-# Feedback CRUD
-# ---------------------------
-feedback_collection = database.feedback
-
-
-async def create_feedback(fb_data: dict) -> FeedbackDB:
-    result = await feedback_collection.insert_one(fb_data)
-    new_fb = await feedback_collection.find_one({"_id": result.inserted_id})
-    return FeedbackDB(**new_fb)
-
-
-async def find_feedback(target_type: Optional[str] = None, target_id: Optional[str] = None) -> List[FeedbackDB]:
-    query = {}
-    if target_type:
-        query["target_type"] = target_type
-    if target_id:
-        query["target_id"] = ObjectId(target_id)
-    cursor = feedback_collection.find(query)
-    feedbacks = await cursor.to_list(length=1000)
-    return [FeedbackDB(**fb) for fb in feedbacks]
-
-# ---------------------------
-# Resources CRUD
-# ---------------------------
-resource_collection = database.resources
-
-
-async def create_resource(res_data: dict) -> ResourceDB:
-    result = await resource_collection.insert_one(res_data)
-    new_res = await resource_collection.find_one({"_id": result.inserted_id})
-    return ResourceDB(**new_res)
-
-
-async def get_all_resources() -> List[ResourceDB]:
-    cursor = resource_collection.find({})
-    resources = await cursor.to_list(length=1000)
-    return [ResourceDB(**res) for res in resources]
-
-
-async def get_resource_by_id(res_id: str) -> ResourceDB:
-    result = await resource_collection.find_one({"_id": ObjectId(res_id)})
-    if not result:
-        return False
-    return ResourceDB(**result)
-
-
-async def update_resource(res_id: str, res_data: dict) -> ResourceDB:
-    result = await resource_collection.update_one(
-        {"_id": ObjectId(res_id)},
-        {"$set": res_data}
-    )
-    if result.modified_count == 0:
-        return False
-    updated = await resource_collection.find_one({"_id": ObjectId(res_id)})
-    return ResourceDB(**updated)
-
-
-async def delete_resource(res_id: str) -> bool:
-    result = await resource_collection.delete_one({"_id": ObjectId(res_id)})
-    return result.deleted_count == 1
+    return personas

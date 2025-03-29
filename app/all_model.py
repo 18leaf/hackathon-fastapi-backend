@@ -65,31 +65,6 @@ class EventDB(EventCreate):
 
 
 # ---------------------------
-# Clubs
-# ---------------------------
-class ClubCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    meeting_times: Optional[str] = None
-    tags: List[str] = []
-    contact_email: Optional[str] = None
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-
-
-class ClubDB(ClubCreate):
-    id: PyObjectId = Field(..., alias="_id")
-    created_at: datetime = Field(...)
-
-    class Config:
-        arbitrary_types_allowed = True
-        from_attributes = True
-        json_encoders = {ObjectId: str}
-
-
-# ---------------------------
 # Attendances
 # ---------------------------
 class AttendanceCreate(BaseModel):
@@ -105,77 +80,6 @@ class AttendanceCreate(BaseModel):
 
 
 class AttendanceDB(AttendanceCreate):
-    id: PyObjectId = Field(..., alias="_id")
-
-    class Config:
-        arbitrary_types_allowed = True
-        from_attributes = True
-        json_encoders = {ObjectId: str}
-
-
-# ---------------------------
-# Memberships
-# ---------------------------
-class MembershipCreate(BaseModel):
-    user_id: PyObjectId
-    club_id: PyObjectId
-    joined_at: Optional[datetime] = None
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-
-
-class MembershipDB(MembershipCreate):
-    id: PyObjectId = Field(..., alias="_id")
-
-    class Config:
-        arbitrary_types_allowed = True
-        from_attributes = True
-        json_encoders = {ObjectId: str}
-
-
-# ---------------------------
-# Feedback
-# ---------------------------
-class FeedbackCreate(BaseModel):
-    user_id: PyObjectId
-    target_type: str  # e.g., "event", "club", "resource"
-    target_id: PyObjectId
-    rating: Optional[int] = None
-    comment: Optional[str] = None
-    created_at: datetime = Field(...)
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-
-
-class FeedbackDB(FeedbackCreate):
-    id: PyObjectId = Field(..., alias="_id")
-
-    class Config:
-        arbitrary_types_allowed = True
-        from_attributes = True
-        json_encoders = {ObjectId: str}
-
-
-# ---------------------------
-# Resources
-# ---------------------------
-class ResourceCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    location: Optional[str] = None
-    contact_info: Optional[str] = None
-    tags: List[str] = []
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-
-
-class ResourceDB(ResourceCreate):
     id: PyObjectId = Field(..., alias="_id")
 
     class Config:

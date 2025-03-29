@@ -3,4 +3,4 @@ from config import settings
 
 client = AsyncIOMotorClient(settings.MONGO_URI)
 # change clinet.(name) for
-database = client.HACKATHONDB
+database = client.HACKATHONFAKED
