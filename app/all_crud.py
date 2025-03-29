@@ -1,3 +1,5 @@
+from typing import List
+from ai_model import AISummaryCreate, AISummaryDB
 from mongodb import database
 from all_model import (
     UserProfileCreate, UserProfileDB,
@@ -170,3 +172,41 @@ async def get_event_personas(event_id: str) -> List[Dict[str, Any]]:
             personas.append(persona)
 
     return personas
+
+
+# Create a new collection for AI summaries.
+ai_summary_collection = database.ai_summaries
+
+
+async def create_ai_summary(summary_data: dict) -> AISummaryDB:
+    """
+    Inserts an AI summary record into the collection and returns the document.
+    """
+    result = await ai_summary_collection.insert_one(summary_data)
+    new_summary = await ai_summary_collection.find_one({"_id": result.inserted_id})
+    return AISummaryDB(**new_summary)
+
+
+async def get_latest_ai_summary_by_event(event_id: str) -> Optional[AISummaryDB]:
+    """
+    Retrieves the most recent AI summary record for the given event.
+
+    :param event_id: The event's ID as a string.
+    :return: An instance of AISummaryDB containing the latest summary, or None if not found.
+    """
+    query = {"event_id": ObjectId(event_id)}
+    # Sort by 'created_at' in descending order to get the most recent record
+    document = await ai_summary_collection.find_one(query, sort=[("created_at", -1)])
+    if not document:
+        return None
+    return AISummaryDB(**document)
+
+
+async def get_ai_summary_by_event(event_id: str) -> List[AISummaryDB]:
+    """
+    Retrieves all AI summary records for a given event.
+    """
+    query = {"event_id": ObjectId(event_id)}
+    cursor = ai_summary_collection.find_one(query)
+    summaries = await cursor.to_list(length=1000)
+    return [AISummaryDB(**s) for s in summaries]

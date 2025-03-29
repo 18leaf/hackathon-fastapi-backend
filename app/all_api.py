@@ -1,12 +1,15 @@
 from datetime import datetime
 from typing import Annotated, Optional, List
 from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi.encoders import jsonable_encoder
 from user_model import UserForm, UserAuth
 from all_model import (
     UserProfileCreate, UserProfileDB,
     EventCreate, EventDB,
     AttendanceCreate, AttendanceDB,
 )
+from ai_model import AISummaryDB
+from ai_integration import generate_recommendation
 import all_crud
 from authentication import get_password_hash, get_current_active_user
 
@@ -183,3 +186,44 @@ async def list_attendance(
 ):
     attendances = await all_crud.find_attendances(user_id, event_id)
     return attendances
+
+
+####
+# AI API
+@router.get("/ai/summary/{event_id}", response_model=AISummaryDB)
+async def get_ai_summary_for_event(event_id: str):
+    """
+    Retrieve the latest AI summary record for the given event_id.
+    No authentication is required.
+
+    :param event_id: The event's ID as a string.
+    :return: A JSON object of the AI summary (with ObjectId fields converted to strings).
+    """
+    summary = await all_crud.get_latest_ai_summary_by_event(event_id)
+    if not summary:
+        raise HTTPException(
+            status_code=404, detail="No AI summary found for this event")
+    return summary
+
+
+@router.post("/ai/request/{event_id}", response_model=AISummaryDB)
+async def create_ai_summary_for_event(event_id: str):
+    """
+    Generate and save an AI summary record for the given event by invoking the AI integration logic.
+    This endpoint calls the LLM to generate sentiment analysis and event recommendations based on user personas,
+    then saves the prompt and LLM response to the database.
+
+    :param event_id: The event's ID as a string.
+    :return: The saved AI summary record as a JSON object (with ObjectId fields converted to strings).
+    """
+    try:
+        result = await generate_recommendation(event_id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"AI summarization failed: {e}")
+
+    if not result.get("saved_record"):
+        raise HTTPException(
+            status_code=500, detail="Failed to save AI summary record.")
+
+    return result["saved_record"]

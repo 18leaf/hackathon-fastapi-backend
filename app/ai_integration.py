@@ -1,3 +1,9 @@
+from pyobjectid import PyObjectId  # For conversion in our model, if needed
+from all_crud import create_ai_summary
+# existing CRUD join function for personas
+from all_crud import get_event_personas
+from typing import List, Dict, Any
+from datetime import datetime
 import asyncio
 # our previously defined CRUD join for personas
 from all_crud import get_event_personas
@@ -58,33 +64,42 @@ def build_recommendation_prompt(personas: list) -> str:
     return "\n".join(lines)
 
 
-async def generate_recommendation(event_id: str) -> dict:
+async def generate_recommendation(event_id: str) -> Dict[str, Any]:
     """
-    Aggregates persona data for a given event (using attendances to join user_profiles)
-    and then constructs a prompt for the LLM. The LLM is called to generate sentiment insights and event recommendations.
-
-    Returns a dictionary with:
-      - 'prompt': the constructed prompt.
-      - 'recommendation': the LLM-generated analysis and recommendations.
+    Fetches user persona data for an event, builds a prompt, calls the LLM,
+    and saves the prompt and response to the database.
     """
     personas = await get_event_personas(event_id)
     if not personas:
         raise Exception("No persona data found for this event.")
+
     prompt = build_recommendation_prompt(personas)
     recommendation = call_azure_llm(prompt)
-    return {"prompt": prompt, "recommendation": recommendation}
+
+    # Build the AI summary record (note: event_id needs to be converted to PyObjectId)
+    ai_summary_data = {
+        "event_id": PyObjectId(event_id),
+        "request": prompt,
+        "response": recommendation,
+        "created_at": datetime.utcnow()
+    }
+    saved_summary = await create_ai_summary(ai_summary_data)
+    return {"prompt": prompt, "recommendation": recommendation, "saved_record": saved_summary.dict(by_alias=True)}
+
 
 # For local testing without API routing
 
 
 async def test_generate_recommendation():
-    # Replace with a valid event ID from your test data
+    # Replace with a valid event ID from your test DB
     sample_event_id = "67e75f35a810c5bf42c49cdb"
     result = await generate_recommendation(sample_event_id)
     print("Constructed Prompt:")
     print(result["prompt"])
     print("\nLLM Recommendation Output:")
     print(result["recommendation"])
+    print("\nSaved Record:")
+    print(result["saved_record"])
 
 if __name__ == "__main__":
     asyncio.run(test_generate_recommendation())
